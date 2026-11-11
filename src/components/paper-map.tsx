@@ -104,6 +104,8 @@ export function PaperMap({ project: p }: { project: Project }) {
     void import("cytoscape")
       .then(({ default: cytoscape }) => {
         if (disposed || !container.current) return;
+        const years = papers.flatMap((p) => (p.year === null ? [] : [p.year]));
+        const firstYear = years.length ? Math.min(...years) : 0;
         const definitions: ElementDefinition[] = [
           {
             group: "nodes",
@@ -113,6 +115,8 @@ export function PaperMap({ project: p }: { project: Project }) {
               color: "#7397ff",
               size: 44,
             },
+            position:
+              mode === "timeline" ? { x: -100, y: 250 } : p.positions.idea,
           },
         ];
         papers.forEach((paper, i) =>
@@ -121,9 +125,12 @@ export function PaperMap({ project: p }: { project: Project }) {
             data: {
               id: paper.id,
               label:
-                paper.title.length > 46
+                (mode === "timeline"
+                  ? `${paper.year ?? "Year unavailable"} · `
+                  : "") +
+                (paper.title.length > 46
                   ? paper.title.slice(0, 44) + "…"
-                  : paper.title,
+                  : paper.title),
               color: challenges.has(paper.id)
                 ? "#e9a365"
                 : paper.year && paper.year <= earlierCutoff
@@ -137,7 +144,10 @@ export function PaperMap({ project: p }: { project: Project }) {
             position:
               mode === "timeline"
                 ? {
-                    x: (paper.year ?? new Date().getFullYear()) * 100,
+                    x:
+                      paper.year === null
+                        ? -230
+                        : (paper.year - firstYear) * 95,
                     y: 80 + (i % 6) * 95,
                   }
                 : p.positions[paper.id],
@@ -243,7 +253,7 @@ export function PaperMap({ project: p }: { project: Project }) {
             animate: false,
             padding: 65,
           },
-          minZoom: 0.08,
+          minZoom: 0.02,
           maxZoom: 3,
           wheelSensitivity: 0.2,
         });
